@@ -1,9 +1,37 @@
 import Image from "next/image";
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <nav className="row-start-1 flex justify-center">
+        <ul className="flex gap-4">
+          <li><Link href="/">Home</Link></li>
+          <li><Link href="/tutorials">Tutorials</Link></li>
+          <li><Link href="/resources">Resources</Link></li>
+          <li><Link href="/blog">Blog</Link></li>
+        </ul>
+      </nav>
+
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        <h1 className="text-3xl font-bold">Welcome to ZeroStack</h1>
+        <p className="text-lg">A curated directory of developer resources.</p>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-2xl font-bold">Featured Tutorials</h2>
+          {/* Placeholder for tutorials list */}
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-2xl font-bold">Featured Resources</h2>
+          {/* Placeholder for resources list */}
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-2xl font-bold">Latest Blog Posts</h2>
+          {/* Placeholder for blog list */}
+        </section>
+
         <Image
           className="dark:invert"
           src="/next.svg"
