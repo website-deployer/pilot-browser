@@ -9,6 +9,10 @@ export default function Footer() {
             <a href="/sponsors" className="text-blue-600 dark:text-blue-400">Learn more</a>
           </div>
           <div>
+            <h3 className="font-bold">Recommended Tools</h3>
+            <p>Coming soon: Amazon developer tools recommendations.</p>
+          </div>
+          <div>
             <p>&copy; {new Date().getFullYear()} ZeroStack</p>
           </div>
         </div>
