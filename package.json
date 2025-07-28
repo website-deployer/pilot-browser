@@ -2,12 +2,18 @@
   "name": "pilot-browser",
   "version": "0.1.0",
   "description": "A minimalist AI-powered browser with intelligent task automation",
-  "main": "main.js",
+  "main": "dist/main.js",
+  "type": "module",
   "scripts": {
     "start": "electron .",
-    "dev": "NODE_ENV=development electron .",
-    "build": "electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite --port 3000",
+    "build:renderer": "vite build",
+    "build:main": "node scripts/build-main.js",
+    "build": "npm run build:renderer && npm run build:main",
+    "package": "node scripts/build.js",
+    "release": "npm run build && npm run package",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
     "browser",
@@ -15,38 +21,55 @@
     "ai",
     "electron"
   ],
-  "author": "",
+  "author": "Pilot Browser Team",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitejs/plugin-vue": "^4.0.0",
     "electron": "^28.0.0",
-    "electron-builder": "^24.6.4"
+    "electron-builder": "^24.6.4",
+    "vite": "^5.0.0",
+    "vite-plugin-electron": "^0.14.0",
+    "vite-plugin-electron-renderer": "^0.14.0"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.4.0",
     "electron-store": "^8.1.0",
+    "fs-extra": "^11.1.0",
     "socket.io-client": "^4.7.2"
   },
   "build": {
+    "extends": "electron-builder.yml",
     "appId": "com.pilot.browser",
     "productName": "Pilot Browser",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
-      "src/**/*",
-      "main.js",
-      "preload.js"
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "app/backend",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": ["nsis", "portable"],
+      "icon": "build/icon.ico"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
+      "target": ["dmg", "zip"],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.utilities"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
+      "target": ["AppImage", "deb", "rpm"],
+      "icon": "build/icon.png",
+      "category": "Network"
     }
   }
 }
