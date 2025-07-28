@@ -2,6 +2,8 @@ appId: com.pilot.browser
 productName: Pilot Browser
 copyright: Copyright © 2023 Pilot Browser
 
+afterPack: ./build/afterPack.cjs
+
 directories:
   output: release/${version}
   buildResources: build
@@ -30,6 +32,10 @@ win:
   icon: build/icon.ico
   artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
   publisherName: "Pilot Browser Team"
+  # Disable code signing for development builds
+  verifyUpdateCodeSignature: false
+  # Disable signing for development
+  signingHashAlgorithms: []
   fileAssociations:
     - ext: html
       name: HTML File
@@ -75,5 +81,3 @@ publish:
   publishAutoUpdate: false
 
 generateUpdatesFilesForAllChannels: false
-
-afterPack: ./build/afterPack.js

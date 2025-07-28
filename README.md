@@ -2,35 +2,100 @@
 
 A minimalist, AI-powered browser with two main modes: Search Mode (AI-enhanced web search) and Agent Mode (multi-agent automation).
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/yourusername/pilot-browser/pulls)
 
-- **Search Mode**: AI-enhanced web search with multi-source aggregation and summarization
-- **Agent Mode**: Multi-agent system (Orion Framework) for task automation
-- Minimalist UI with a single input field (Raycast/Spotlight inspired)
-- Dark/light theme support
-- Voice input support
-- Secure credential handling
-- Cross-platform (Windows, macOS, Linux)
+## ✨ Features
 
-## Tech Stack
+- **🔍 Search Mode**: AI-enhanced web search with multi-source aggregation and summarization
+- **🤖 Agent Mode**: Multi-agent system (Orion Framework) for task automation
+- **🎨 Minimalist UI**: Single input field inspired by Raycast/Spotlight
+- **🌓 Dark/Light Theme**: Automatic theme switching based on system preferences
+- **🎙️ Voice Input**: Built-in voice recognition for hands-free operation
+- **🔒 Secure**: Encrypted credential storage and secure data handling
+- **🌐 Cross-platform**: Works on Windows, macOS, and Linux
 
-- **Frontend**: 
-  - Electron
-  - HTML/CSS/JavaScript
-  - Responsive design with mobile support
+## 🚀 Getting Started
 
-- **Backend**:
-  - Python with FastAPI/Flask
-  - Playwright/Pyppeteer for browser automation
-  - SQLite with encryption for local storage
-  - OAuth2 for authentication
+### Prerequisites
 
-- **AI/ML**:
-  - OpenAI GPT-4 integration (pluggable)
-  - Multi-agent orchestration
-  - Natural language processing
+- Node.js (v16 or later)
+- Python (3.8 or later)
+- npm or yarn
 
-## Project Structure
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/pilot-browser.git
+   cd pilot-browser
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # Install frontend dependencies
+   npm install
+   
+   # Create and activate a Python virtual environment (recommended)
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   ```
+
+3. **Environment Setup**
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   # API Keys
+   OPENAI_API_KEY=your_openai_api_key
+   
+   # Backend Configuration
+   PORT=8000
+   DEBUG=True
+   
+   # Frontend Configuration
+   VITE_API_URL=http://localhost:8000
+   ```
+
+### Running the Application
+
+1. **Start the backend server**
+   ```bash
+   cd backend
+   uvicorn main:app --reload
+   ```
+
+2. **Start the frontend** (in a new terminal)
+   ```bash
+   # Development mode
+   npm run dev
+   
+   # Or build for production
+   npm run build
+   npm start
+   ```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Electron** - Cross-platform desktop application
+- **HTML/CSS/JavaScript** - Core web technologies
+- **Vite** - Fast build tool and development server
+- **Tailwind CSS** - Utility-first CSS framework
+
+### Backend
+- **Python** - Core programming language
+- **FastAPI** - Modern, fast web framework
+- **SQLAlchemy** - SQL toolkit and ORM
+- **Playwright** - Browser automation
+
+### AI/ML
+- **OpenAI GPT-4** - Language model integration
+- **Multi-agent System** - Task automation framework
+- **NLP** - Natural language processing
+
+## 📂 Project Structure
 
 ```
 .
@@ -48,6 +113,22 @@ A minimalist, AI-powered browser with two main modes: Search Mode (AI-enhanced w
 │   ├── renderer/
 │   │   ├── css/              # Stylesheets
 │   │   ├── js/               # JavaScript modules
+│   │   │   ├── components/   # Reusable UI components
+│   │   │   ├── services/     # API and service integrations
+│   │   │   └── utils/        # Helper functions
+│   │   └── index.html        # Main HTML file
+│   ├── main/                 # Electron main process files
+│   └── preload/              # Preload scripts for security
+│
+├── .github/                  # GitHub configuration
+│   └── workflows/           # CI/CD workflows
+│
+├── scripts/                  # Build and utility scripts
+├── tests/                   # End-to-end tests
+├── .gitignore               # Git ignore file
+├── CONTRIBUTING.md          # Contribution guidelines
+├── LICENSE                  # MIT License
+└── README.md                # This file
 │   │   ├── assets/           # Images, fonts, etc.
 │   │   └── index.html        # Main HTML file
 │   └── main.js               # Electron main process

@@ -344,9 +344,3 @@ function saveSettings(e) {
     }
 }
 
-// Export public functions
-export {
-    openModal,
-    closeModal,
-    closeTopModal
-};
