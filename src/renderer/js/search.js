@@ -28,8 +28,44 @@ export function initSearch() {
     };
     
     // Handle search form submission
-    searchForm.addEventListener('submit', handleSearchSubmit);
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSearchSubmit(e);
+    });
+
+    // Handle quick action buttons
+    const calcBtn = document.getElementById('calc-btn');
+    const sumBtn = document.getElementById('sum-btn');
+    const transBtn = document.getElementById('trans-btn');
+    const weatherBtn = document.getElementById('weather-btn');
+    const automateBtn = document.getElementById('automate-btn');
+
+    if (calcBtn) calcBtn.addEventListener('click', () => {
+        searchInput.value = 'Calculate: ' + searchInput.value;
+        handleSearchSubmit(new Event('submit'));
+    });
     
+    if (sumBtn) sumBtn.addEventListener('click', () => {
+        searchInput.value = 'Summarize: ' + searchInput.value;
+        handleSearchSubmit(new Event('submit'));
+    });
+
+    if (transBtn) transBtn.addEventListener('click', () => {
+        searchInput.value = 'Translate to English: ' + searchInput.value;
+        handleSearchSubmit(new Event('submit'));
+    });
+
+    if (weatherBtn) weatherBtn.addEventListener('click', () => {
+        searchInput.value = 'What is the weather in my current location?';
+        handleSearchSubmit(new Event('submit'));
+    });
+
+    if (automateBtn) automateBtn.addEventListener('click', () => {
+        searchInput.value = 'Automate: ' + searchInput.value;
+        switchSearchMode('ai');
+        handleSearchSubmit(new Event('submit'));
+    });
+
     // Handle search input changes
     searchInput.addEventListener('input', handleSearchInput);
     
@@ -59,9 +95,10 @@ export function initSearch() {
  * @param {Event} e - The form submission event
  */
 async function handleSearchSubmit(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     
     const searchInput = document.getElementById('search-input');
+    const searchInputContainer = document.querySelector('.search-input-container');
     if (!searchInput) return;
     
     const query = searchInput.value.trim();
@@ -76,11 +113,12 @@ async function handleSearchSubmit(e) {
     
     // Show loading state
     showSearchLoading(query);
+    if (searchInputContainer) searchInputContainer.classList.add('searching-animation');
     
     try {
         // Perform the search based on the current mode
         if (state.search.mode === 'ai') {
-            await performAISearch(query);
+            await performAgentTask(query);
         } else {
             await performWebSearch(query);
         }
@@ -89,6 +127,139 @@ async function handleSearchSubmit(e) {
         showSearchError('Failed to perform search. Please try again.');
     } finally {
         state.search.isSearching = false;
+        if (searchInputContainer) searchInputContainer.classList.remove('searching-animation');
+    }
+}
+
+/**
+ * Perform an Agent Mode task
+ */
+async function performAgentTask(query) {
+    try {
+        showAILoading(query);
+
+        // Call the backend API
+        const response = await fetch(`${state.apiUrl}/api/v1/agent/tasks/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.token}` // Assuming token is in state
+            },
+            body: JSON.stringify({
+                title: query,
+                agent_type: 'orchestrator',
+                input_data: { query: query, safety_level: document.getElementById('safety-level').value }
+            })
+        });
+
+        const task = await response.json();
+        pollTaskStatus(task.id);
+
+    } catch (error) {
+        console.error('Agent task error:', error);
+        showSearchError('Failed to start agent task.');
+    }
+}
+
+function pollTaskStatus(taskId) {
+    const interval = setInterval(async () => {
+        try {
+            const response = await fetch(`${state.apiUrl}/api/v1/agent/tasks/${taskId}`, {
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            const task = await response.json();
+
+            if (task.status === 'completed') {
+                clearInterval(interval);
+                displayAgentResult(task.result);
+            } else if (task.status === 'pending' && task.result && task.result.clarification_needed) {
+                clearInterval(interval);
+                showClarificationPopup(taskId, task.result.questions);
+            } else if (task.status === 'failed') {
+                clearInterval(interval);
+                showSearchError('Agent task failed: ' + task.result.error);
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+            clearInterval(interval);
+        }
+    }, 2000);
+}
+
+function displayAgentResult(result) {
+    const resultsContainer = document.getElementById('results-container');
+    if (result.research) {
+        displayAIResponse({
+            content: result.research.summary,
+            sources: result.research.sources
+        });
+    }
+
+    if (result.artifact) {
+        showArtifact(result.artifact);
+    }
+}
+
+function showArtifact(artifact) {
+    const artifactsSidebar = document.getElementById('artifacts-sidebar');
+    const artifactsContent = document.getElementById('artifacts-content');
+
+    if (artifactsSidebar && artifactsContent) {
+        artifactsSidebar.classList.add('active');
+        if (artifact.type === 'app') {
+            artifactsContent.innerHTML = `<iframe srcdoc="${artifact.code.replace(/"/g, '&quot;')}" style="width:100%; height:100%; border:none;"></iframe>`;
+        } else {
+            artifactsContent.innerHTML = `<pre><code>${artifact.code}</code></pre><p>${artifact.explanation}</p>`;
+        }
+    }
+}
+
+function showClarificationPopup(taskId, questions) {
+    const popup = document.getElementById('clarification-popup');
+    const questionEl = document.getElementById('clarification-question');
+    const optionsEl = document.getElementById('clarification-options');
+
+    if (!popup || !questionEl || !optionsEl) return;
+
+    popup.classList.remove('hidden');
+    questionEl.textContent = questions[0];
+    optionsEl.innerHTML = '';
+
+    // Mocking some options for the demo
+    ['Yes', 'No', 'Tell me more'].forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = opt;
+        btn.onclick = () => sendClarification(taskId, opt);
+        optionsEl.appendChild(btn);
+    });
+
+    document.getElementById('send-clarification').onclick = () => {
+        const val = document.getElementById('custom-clarification').value;
+        sendClarification(taskId, val);
+    };
+}
+
+async function sendClarification(taskId, answer) {
+    document.getElementById('clarification-popup').classList.add('hidden');
+
+    try {
+        await fetch(`${state.apiUrl}/api/v1/agent/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.token}`
+            },
+            body: JSON.stringify({
+                input_data: { answer: answer }
+            })
+        });
+
+        console.log(`Clarification sent for ${taskId}: ${answer}`);
+        pollTaskStatus(taskId);
+    } catch (error) {
+        console.error('Error sending clarification:', error);
+        showSearchError('Failed to send clarification.');
     }
 }
 
@@ -175,31 +346,25 @@ function switchSearchMode(mode) {
  * @param {string} query - The search query
  */
 async function performWebSearch(query) {
-    // Cancel any pending requests
     if (searchController) {
         searchController.abort();
     }
-    
-    // Create a new AbortController for this request
     searchController = new AbortController();
     
     try {
-        // In a real app, this would be an API call to your backend
-        // const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-        //     signal: searchController.signal
-        // });
-        // const results = await response.json();
+        const response = await fetch(`${state.apiUrl}/api/v1/search/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.token}`
+            },
+            body: JSON.stringify({ query: query }),
+            signal: searchController.signal
+        });
         
-        // For now, we'll use mock data
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
-        
-        const mockResults = generateMockSearchResults(query);
-        
-        // Update state
-        state.search.results = mockResults;
-        
-        // Display results
-        displaySearchResults(mockResults);
+        const data = await response.json();
+        state.search.results = data.results;
+        displaySearchResults(data.results);
         
     } catch (error) {
         if (error.name !== 'AbortError') {

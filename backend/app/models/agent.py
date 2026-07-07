@@ -66,9 +66,10 @@ class AgentTaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="A short title for the task")
     description: Optional[str] = Field(None, max_length=1000, description="A detailed description of the task")
     status: Optional[AgentTaskStatus] = Field(None, description="The new status of the task")
+    input_data: Optional[Dict[str, Any]] = Field(None, description="Updated input data for the task")
     
     class Config:
-        extra = "forbid"  # Don't allow extra fields in updates
+        extra = "allow"
 
 class AgentTask(AgentTaskBase):
     """Full agent task model with all fields."""

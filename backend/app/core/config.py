@@ -49,12 +49,13 @@ class Settings(BaseSettings):
     )
     
     # LLM
-    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4")
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", "lm-studio")
+    OPENAI_API_BASE: Optional[str] = os.getenv("OPENAI_API_BASE", "http://localhost:1234/v1")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemma-4-e4b")
     
     # Search
     SEARCH_PROVIDERS: List[str] = [
-        "google", "bing", "duckduckgo"
+        "duckduckgo", "wikipedia", "google", "bing"
     ]
     
     # Security

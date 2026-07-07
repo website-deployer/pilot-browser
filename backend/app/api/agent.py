@@ -156,6 +156,7 @@ async def get_agent_task(
 async def update_agent_task(
     task_id: str,
     task_update: AgentTaskUpdate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user)
 ):
     """
@@ -191,6 +192,15 @@ async def update_agent_task(
             
         task.updated_at = datetime.utcnow()
         
+        # If resuming with clarification
+        if task_update.input_data and "answer" in task_update.input_data:
+            background_tasks.add_task(
+                process_agent_task,
+                task_id=task_id,
+                task_data=None, # Not used when resuming
+                resume_info=task_update.input_data["answer"]
+            )
+
         # Update the task in the store
         task_store[task_id] = task
         
@@ -306,7 +316,7 @@ async def cancel_agent_task(
             detail="Failed to cancel agent task"
         )
 
-async def process_agent_task(task_id: str, task_data: AgentTaskCreate):
+async def process_agent_task(task_id: str, task_data: Optional[AgentTaskCreate] = None, resume_info: Optional[str] = None):
     """
     Background task to process an agent task.
     
@@ -325,22 +335,23 @@ async def process_agent_task(task_id: str, task_data: AgentTaskCreate):
         
         # Process the task based on agent type
         try:
-            if task.agent_type == AgentType.PLANNER:
-                result = await agent_service.run_planner(task.input_data)
-            elif task.agent_type == AgentType.RESEARCHER:
-                result = await agent_service.run_researcher(task.input_data)
-            elif task.agent_type == AgentType.DEVELOPER:
-                result = await agent_service.run_developer(task.input_data)
-            elif task.agent_type == AgentType.TESTER:
-                result = await agent_service.run_tester(task.input_data)
-            elif task.agent_type == AgentType.ORCHESTRATOR:
-                result = await agent_service.run_orchestrator(task.input_data)
-            else:
-                raise ValueError(f"Unknown agent type: {task.agent_type}")
+            # Use the orchestrator for all tasks now
+            result = await agent_service.execute_task(
+                task_id=task_id,
+                user_id=task.user_id,
+                task_type=task.agent_type,
+                parameters=task.input_data,
+                resume_info=resume_info
+            )
                 
             # Update task with results
-            task.result = result
-            task.status = AgentTaskStatus.COMPLETED
+            task.result = result.get("results")
+            if result.get("status") == "pending":
+                task.status = AgentTaskStatus.PENDING
+            elif result.get("status") == "failed":
+                task.status = AgentTaskStatus.FAILED
+            else:
+                task.status = AgentTaskStatus.COMPLETED
             
         except Exception as e:
             # Handle errors during task processing

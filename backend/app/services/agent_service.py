@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any, Callable, Awaitable
 from enum import Enum
 from dataclasses import dataclass, field
 import json
+from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.models import Task, TaskStatus, TaskType
@@ -61,8 +62,9 @@ class Agent:
 
 class PlannerAgent(Agent):
     """Planner agent responsible for task planning and coordination"""
-    def __init__(self):
+    def __init__(self, client: AsyncOpenAI):
         super().__init__(AgentType.PLANNER)
+        self.client = client
     
     async def execute(self, context: AgentContext) -> AgentContext:
         """Plan the execution of a task"""
@@ -72,12 +74,41 @@ class PlannerAgent(Agent):
         await self._update_task_status(context.task_id, TaskStatus.RUNNING)
         
         try:
-            # Here we would implement the actual planning logic
-            # For now, we'll just pass the context through
-            context.state["plan"] = {
-                "steps": ["research", "develop", "test"],
-                "current_step": 0
-            }
+            prompt = f"""
+            You are the Planner Agent of the Pilot Browser. Your job is to analyze a user task and create a step-by-step plan.
+            User Task: {context.parameters.get('query')}
+
+            Available tools: Web Search, Python Execution, Browser Automation (Playwright).
+
+            Determine:
+            1. If the task is feasible.
+            2. If you need more information from the user.
+            3. The steps required to complete the task.
+
+            Respond in JSON format:
+            {{
+                "feasible": true/false,
+                "needs_clarification": true/false,
+                "questions": ["question1", ...],
+                "plan": ["step1", "step2", ...],
+                "reasoning": "..."
+            }}
+            """
+
+            response = await self.client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "system", "content": "You are a helpful task planner."},
+                          {"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+
+            plan_data = json.loads(response.choices[0].message.content)
+            context.state["plan"] = plan_data
+
+            if plan_data.get("needs_clarification"):
+                context.results["clarification_needed"] = True
+                context.results["questions"] = plan_data.get("questions")
+                await self._update_task_status(context.task_id, TaskStatus.PENDING)
             
             return context
         except Exception as e:
@@ -98,19 +129,35 @@ class PlannerAgent(Agent):
 
 class ResearchAgent(Agent):
     """Research agent responsible for gathering information"""
-    def __init__(self):
+    def __init__(self, client: AsyncOpenAI):
         super().__init__(AgentType.RESEARCHER)
+        self.client = client
     
     async def execute(self, context: AgentContext) -> AgentContext:
         """Perform research for the task"""
         logger.info(f"ResearchAgent executing task {context.task_id}")
         
+        if context.results.get("clarification_needed"):
+            return context
+
         try:
-            # Here we would implement the actual research logic
-            # For now, we'll just add some dummy data
+            from app.services.search_service import search_service
+            query = context.parameters.get('query')
+            search_results = await search_service.search(query=query)
+
+            # Summarize research
+            sources_text = "\n".join([f"- {r['title']}: {r['snippet']}" for r in search_results.get("results", [])])
+
+            prompt = f"Summarize the following research results for the task '{query}':\n\n{sources_text}"
+
+            response = await self.client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
             context.results["research"] = {
-                "sources": ["source1", "source2"],
-                "summary": "Research summary"
+                "summary": response.choices[0].message.content,
+                "sources": search_results.get("results", [])
             }
             
             return context
@@ -121,20 +168,42 @@ class ResearchAgent(Agent):
 
 class DeveloperAgent(Agent):
     """Developer agent responsible for generating automation scripts"""
-    def __init__(self):
+    def __init__(self, client: AsyncOpenAI):
         super().__init__(AgentType.DEVELOPER)
+        self.client = client
     
     async def execute(self, context: AgentContext) -> AgentContext:
         """Generate automation script for the task"""
         logger.info(f"DeveloperAgent executing task {context.task_id}")
         
+        if context.results.get("clarification_needed"):
+            return context
+
         try:
-            # Here we would implement the actual script generation logic
-            # For now, we'll just add some dummy data
-            context.results["script"] = {
-                "language": "python",
-                "code": "print('Hello, World!')"
-            }
+            research_summary = context.results.get("research", {}).get("summary", "")
+            query = context.parameters.get('query')
+
+            prompt = f"""
+            You are the Developer Agent. Based on the task '{query}' and research '{research_summary}', generate a Python Playwright script to automate this task.
+            The script should be self-contained and use the `sync_playwright` or `async_playwright` library.
+            If the task requires an interactive 'app', generate a single-file HTML/JS app instead.
+
+            Respond in JSON:
+            {{
+                "type": "playwright" or "app",
+                "code": "...",
+                "explanation": "..."
+            }}
+            """
+
+            response = await self.client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+
+            dev_data = json.loads(response.choices[0].message.content)
+            context.results["artifact"] = dev_data
             
             return context
         except Exception as e:
@@ -144,19 +213,33 @@ class DeveloperAgent(Agent):
 
 class TesterAgent(Agent):
     """Tester agent responsible for validating automation scripts"""
-    def __init__(self):
+    def __init__(self, client: AsyncOpenAI):
         super().__init__(AgentType.TESTER)
+        self.client = client
     
     async def execute(self, context: AgentContext) -> AgentContext:
         """Test the generated automation script"""
         logger.info(f"TesterAgent executing task {context.task_id}")
         
+        if context.results.get("clarification_needed"):
+            return context
+
         try:
-            # Here we would implement the actual testing logic
-            # For now, we'll just add some dummy data
+            artifact = context.results.get("artifact", {})
+            if not artifact:
+                return context
+
+            # For now, simulate testing by asking the LLM to review the code
+            prompt = f"Review the following code for errors or security issues:\n\n{artifact.get('code')}"
+
+            response = await self.client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
             context.results["test_results"] = {
                 "passed": True,
-                "details": "All tests passed"
+                "review": response.choices[0].message.content
             }
             
             # Update task status to completed if no errors
@@ -192,6 +275,7 @@ class AgentService:
             cls._instance = super(AgentService, cls).__new__(cls)
             cls._instance.initialized = False
             cls._instance.agents = {}
+            cls._instance.client = None
         return cls._instance
     
     async def initialize(self):
@@ -199,12 +283,18 @@ class AgentService:
         if not self.initialized:
             logger.info("Initializing AgentService")
             
+            # Initialize OpenAI client (pointing to LM Studio)
+            self.client = AsyncOpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                base_url=settings.OPENAI_API_BASE
+            )
+
             # Initialize agents
             self.agents = {
-                AgentType.PLANNER: PlannerAgent(),
-                AgentType.RESEARCHER: ResearchAgent(),
-                AgentType.DEVELOPER: DeveloperAgent(),
-                AgentType.TESTER: TesterAgent()
+                AgentType.PLANNER: PlannerAgent(self.client),
+                AgentType.RESEARCHER: ResearchAgent(self.client),
+                AgentType.DEVELOPER: DeveloperAgent(self.client),
+                AgentType.TESTER: TesterAgent(self.client)
             }
             
             # Initialize all agents
@@ -226,12 +316,12 @@ class AgentService:
             self.initialized = False
             logger.info("AgentService shut down successfully")
     
-    async def execute_task(self, task_id: int, user_id: int, task_type: TaskType, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_task(self, task_id: str, user_id: int, task_type: str, parameters: Dict[str, Any], resume_info: Optional[str] = None) -> Dict[str, Any]:
         """Execute a task using the agent system"""
         if not self.initialized:
             await self.initialize()
         
-        # Create agent context
+        # In a real app, we'd load the existing context if resuming
         context = AgentContext(
             task_id=task_id,
             user_id=user_id,
@@ -239,20 +329,36 @@ class AgentService:
             parameters=parameters
         )
         
+        if resume_info:
+            context.state["clarification_response"] = resume_info
+            context.state["resuming"] = True
+
         try:
-            # Execute agents in sequence
-            for agent_type in [AgentType.PLANNER, AgentType.RESEARCHER, AgentType.DEVELOPER, AgentType.TESTER]:
-                agent = self.agents[agent_type]
-                logger.info(f"Executing {agent_type} for task {task_id}")
-                context = await agent.execute(context)
-                
-                # Check for errors
-                if context.errors:
-                    logger.error(f"{agent_type} reported errors: {context.errors}")
-                    break
+            # Step 1: Planning
+            context = await self.agents[AgentType.PLANNER].execute(context)
+            if context.results.get("clarification_needed") and not resume_info:
+                return {"status": "pending", "results": context.results}
+
+            # Step 2: Research
+            context = await self.agents[AgentType.RESEARCHER].execute(context)
+            if context.errors: return {"status": "failed", "errors": context.errors}
+
+            # Step 3: Development
+            context = await self.agents[AgentType.DEVELOPER].execute(context)
+            if context.errors: return {"status": "failed", "errors": context.errors}
+
+            # Step 4: Testing & Execution
+            context = await self.agents[AgentType.TESTER].execute(context)
             
+            # Final Execution of Playwright script if applicable
+            artifact = context.results.get("artifact", {})
+            if artifact.get("type") == "playwright":
+                from app.services.executor_service import execute_playwright_script
+                exec_result = execute_playwright_script(artifact.get("code"))
+                context.results["execution_output"] = exec_result
+
             return {
-                "success": not bool(context.errors),
+                "status": "completed",
                 "results": context.results,
                 "errors": context.errors
             }

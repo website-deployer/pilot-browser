@@ -11,6 +11,8 @@ import { checkConnectionStatus, setupIpcHandlers } from './ipc.js';
 // Global state
 const state = {
     isInitialized: false,
+    apiUrl: 'http://localhost:8000',
+    token: 'dev-token', // Placeholder for development
     user: null,
     preferences: {},
     searchHistory: [],
