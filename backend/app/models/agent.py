@@ -7,7 +7,7 @@ and data transfer in the Agent Mode API.
 from enum import Enum
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from uuid import UUID, uuid4
 
 class AgentType(str, Enum):
@@ -37,11 +37,6 @@ class AgentTaskStep(BaseModel):
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
-
 class AgentTaskResult(BaseModel):
     """The result of an agent task."""
     success: bool
@@ -62,14 +57,12 @@ class AgentTaskCreate(AgentTaskBase):
     pass
 
 class AgentTaskUpdate(BaseModel):
+    model_config = ConfigDict(extra="allow")
     """Model for updating an existing agent task."""
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="A short title for the task")
     description: Optional[str] = Field(None, max_length=1000, description="A detailed description of the task")
     status: Optional[AgentTaskStatus] = Field(None, description="The new status of the task")
     input_data: Optional[Dict[str, Any]] = Field(None, description="Updated input data for the task")
-    
-    class Config:
-        extra = "allow"
 
 class AgentTask(AgentTaskBase):
     """Full agent task model with all fields."""
@@ -84,11 +77,7 @@ class AgentTask(AgentTaskBase):
     result: Optional[AgentTaskResult] = Field(None, description="The result of the task")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata about the task")
     
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat() if v else None
-        }
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "user_id": "user123",
@@ -129,7 +118,7 @@ class AgentTask(AgentTaskBase):
                     }
                 ],
                 "result": {
-                    "success": true,
+                    "success": True,
                     "output": {
                         "report": "Recent developments in AI for healthcare show significant advancements...",
                         "key_findings": [
@@ -157,7 +146,7 @@ class AgentTask(AgentTaskBase):
                     "tags": ["ai", "healthcare", "research"]
                 }
             }
-        }
+        })
 
 class AgentTaskList(BaseModel):
     """Model for a paginated list of agent tasks."""
@@ -176,8 +165,7 @@ class AgentCapabilities(BaseModel):
     output_schema: Dict[str, Any]
     parameters: Dict[str, Any] = {}
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(json_schema_extra={
             "example": {
                 "agent_type": "researcher",
                 "name": "Research Agent",
@@ -205,4 +193,4 @@ class AgentCapabilities(BaseModel):
                     "supports_file_uploads": True
                 }
             }
-        }
+        })
