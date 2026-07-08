@@ -72,6 +72,22 @@ SEARCH_PROVIDERS = {
         },
         "response_parser": "parse_duckduckgo_results"
     },
+    SearchProvider.WIKIPEDIA: {
+        "name": "Wikipedia",
+        "url": "https://en.wikipedia.org/w/api.php",
+        "params": {
+            "action": "query",
+            "format": "json",
+            "list": "search",
+            "srsearch": "{query}",
+            "srlimit": "{limit}",
+            "utf8": "1"
+        },
+        "headers": {
+            "User-Agent": "PilotBrowser/1.0"
+        },
+        "response_parser": "parse_wikipedia_results"
+    },
     SearchProvider.REDDIT: {
         "name": "Reddit",
         "url": "https://www.reddit.com/search.json",
@@ -411,6 +427,28 @@ class SearchService:
             "total_results": data.get("webPages", {}).get("totalEstimatedMatches", 0)
         }
     
+    def parse_wikipedia_results(self, data: Dict, provider: str, query: str) -> Dict[str, Any]:
+        """Parse search results from Wikipedia API"""
+        items = []
+
+        for i, item in enumerate(data.get("query", {}).get("search", [])):
+            items.append({
+                "title": item.get("title", ""),
+                "url": f"https://en.wikipedia.org/wiki/{quote_plus(item.get('title', ''))}",
+                "snippet": item.get("snippet", ""),
+                "provider": provider,
+                "score": 0.95 - (i * 0.01),
+                "metadata": {
+                    "wordcount": item.get("wordcount"),
+                    "timestamp": item.get("timestamp")
+                }
+            })
+
+        return {
+            "items": items,
+            "total_results": data.get("query", {}).get("searchinfo", {}).get("totalhits", 0)
+        }
+
     def parse_duckduckgo_results(self, data: Dict, provider: str, query: str) -> Dict[str, Any]:
         """Parse search results from DuckDuckGo API"""
         items = []
