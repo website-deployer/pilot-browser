@@ -14,10 +14,8 @@ from app.models.credential import (
     Credential, CredentialCreate, CredentialUpdate, CredentialResponse,
     CredentialInDB
 )
-from app.core.security import (
-    encrypt_credentials, decrypt_credentials, get_password_hash,
-    verify_password, create_access_token, get_current_user
-)
+from app.core.security import encrypt_credentials, decrypt_credentials
+from app.api.auth import get_current_user
 from app.models.user import User
 
 # Configure logging

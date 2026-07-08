@@ -6,7 +6,7 @@ for various services that the Pilot Browser interacts with.
 """
 from datetime import datetime
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 
@@ -34,20 +34,19 @@ class Credential(Base):
 
 # Pydantic Models
 class CredentialBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     """Base credential model"""
     service_name: str = Field(..., min_length=2, max_length=100)
     credential_name: str = Field(..., min_length=2, max_length=100)
     metadata: Dict[str, Any] = {}
-    
-    class Config:
-        orm_mode = True
 
 class CredentialCreate(CredentialBase):
     """Credential creation model"""
     # This will be encrypted before storage
     credentials: Dict[str, Any]
     
-    @validator('service_name', 'credential_name')
+    @field_validator('service_name', 'credential_name')
+    @classmethod
     def validate_name_chars(cls, v):
         """Validate name contains only allowed characters"""
         import re
@@ -61,7 +60,8 @@ class CredentialUpdate(BaseModel):
     credentials: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
     
-    @validator('credential_name')
+    @field_validator('credential_name')
+    @classmethod
     def validate_name_chars(cls, v):
         """Validate name contains only allowed characters if provided"""
         if v is not None:
@@ -78,9 +78,6 @@ class CredentialInDB(CredentialBase):
     encrypted_credentials: str  # Encrypted JSON string
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        orm_mode = True
 
 class CredentialResponse(CredentialBase):
     """Credential response model (excludes encrypted data)"""

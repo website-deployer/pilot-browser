@@ -32,90 +32,137 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div class="search-section">
-                <!-- Clarification Popup -->
-                <div id="clarification-popup" class="clarification-popup hidden">
-                    <div class="popup-content">
-                        <p id="clarification-question"></p>
-                        <div id="clarification-options" class="options-grid"></div>
-                        <div class="custom-input-group">
-                            <input type="text" id="custom-clarification" placeholder="Other option...">
-                            <button id="send-clarification" class="btn-primary">Send</button>
+            <div id="section-home" class="content-section active">
+                <div class="search-section">
+                    <!-- Clarification Popup -->
+                    <div id="clarification-popup" class="clarification-popup hidden">
+                        <div class="popup-content">
+                            <p id="clarification-question"></p>
+                            <div id="clarification-options" class="options-grid"></div>
+                            <div class="custom-input-group">
+                                <input type="text" id="custom-clarification" placeholder="Other option...">
+                                <button id="send-clarification" class="btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search/AI Input -->
+                    <div class="search-container">
+                        <div class="search-box">
+                            <div class="search-input-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input
+                                    type="text"
+                                    id="search-input"
+                                    class="search-input"
+                                    placeholder="Ask or search..."
+                                    autocomplete="off"
+                                    autofocus
+                                >
+                                <div class="search-actions">
+                                    <button id="calc-btn" class="icon-btn" title="Calculator"><i class="fas fa-calculator"></i></button>
+                                    <button id="sum-btn" class="icon-btn" title="Summarize"><i class="fas fa-align-left"></i></button>
+                                    <button id="trans-btn" class="icon-btn" title="Translate"><i class="fas fa-language"></i></button>
+                                    <button id="weather-btn" class="icon-btn" title="Weather"><i class="fas fa-cloud-sun"></i></button>
+                                    <button id="automate-btn" class="icon-btn" title="Automate"><i class="fas fa-magic"></i></button>
+                                    <button id="voice-search-btn" class="icon-btn" title="Voice search">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                    <button id="clear-search-btn" class="icon-btn" title="Clear">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="search-controls">
+                                <div class="search-modes">
+                                    <button class="mode-btn active" data-mode="search">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                    <button class="mode-btn" data-mode="ai">
+                                        <i class="fas fa-robot"></i> Agent Mode
+                                    </button>
+                                </div>
+                                <div class="safety-selector">
+                                    <label for="safety-level">Safety:</label>
+                                    <select id="safety-level">
+                                        <option value="strict">Strict</option>
+                                        <option value="auto" selected>Auto</option>
+                                        <option value="relaxed">Relaxed</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Search/AI Input -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <div class="search-input-container">
-                            <i class="fas fa-search search-icon"></i>
-                            <input
-                                type="text"
-                                id="search-input"
-                                class="search-input"
-                                placeholder="Ask or search..."
-                                autocomplete="off"
-                                autofocus
-                            >
-                            <div class="search-actions">
-                                <button id="calc-btn" class="icon-btn" title="Calculator"><i class="fas fa-calculator"></i></button>
-                                <button id="sum-btn" class="icon-btn" title="Summarize"><i class="fas fa-align-left"></i></button>
-                                <button id="trans-btn" class="icon-btn" title="Translate"><i class="fas fa-language"></i></button>
-                                <button id="weather-btn" class="icon-btn" title="Weather"><i class="fas fa-cloud-sun"></i></button>
-                                <button id="automate-btn" class="icon-btn" title="Automate"><i class="fas fa-magic"></i></button>
-                                <button id="voice-search-btn" class="icon-btn" title="Voice search">
-                                    <i class="fas fa-microphone"></i>
-                                </button>
-                                <button id="clear-search-btn" class="icon-btn" title="Clear">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="search-controls">
-                            <div class="search-modes">
-                                <button class="mode-btn active" data-mode="search">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
-                                <button class="mode-btn" data-mode="ai">
-                                    <i class="fas fa-robot"></i> Agent Mode
-                                </button>
-                            </div>
-                            <div class="safety-selector">
-                                <label for="safety-level">Safety:</label>
-                                <select id="safety-level">
-                                    <option value="strict">Strict</option>
-                                    <option value="auto" selected>Auto</option>
-                                    <option value="relaxed">Relaxed</option>
-                                </select>
-                            </div>
+                <!-- Results Container -->
+                <div id="results-container" class="results-container">
+                    <div class="welcome-message">
+                        <h2>Welcome to Pilot Browser</h2>
+                        <p>Enter a search query or ask a question to get started.</p>
+                        <div class="quick-actions">
+                            <button class="quick-action-btn" data-query="What's the weather today?">
+                                <i class="fas fa-cloud-sun"></i> Weather
+                            </button>
+                            <button class="quick-action-btn" data-query="Latest tech news">
+                                <i class="fas fa-newspaper"></i> Tech News
+                            </button>
+                            <button class="quick-action-btn" data-query="How to automate browser tasks?">
+                                <i class="fas fa-robot"></i> Automate Tasks
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Agent Container -->
-            <div id="agent-container" class="agent-container hidden">
-                <!-- Agent UI will be injected here -->
+            <div id="section-history" class="content-section">
+                <div class="section-placeholder">
+                    <i class="fas fa-history"></i>
+                    <h3>History</h3>
+                    <p>Your browsing history will appear here.</p>
+                </div>
             </div>
 
-            <!-- Results Container -->
-            <div id="results-container" class="results-container">
-                <!-- Results will be dynamically inserted here -->
-                <div class="welcome-message">
-                    <h2>Welcome to Pilot Browser</h2>
-                    <p>Enter a search query or ask a question to get started.</p>
-                    <div class="quick-actions">
-                        <button class="quick-action-btn" data-query="What's the weather today?">
-                            <i class="fas fa-cloud-sun"></i> Weather
-                        </button>
-                        <button class="quick-action-btn" data-query="Latest tech news">
-                            <i class="fas fa-newspaper"></i> Tech News
-                        </button>
-                        <button class="quick-action-btn" data-query="How to automate browser tasks?">
-                            <i class="fas fa-robot"></i> Automate Tasks
-                        </button>
+            <div id="section-bookmarks" class="content-section">
+                <div class="section-placeholder">
+                    <i class="fas fa-bookmark"></i>
+                    <h3>Bookmarks</h3>
+                    <p>Your bookmarks will appear here.</p>
+                </div>
+            </div>
+
+            <div id="section-tasks" class="content-section">
+                <div id="agent-container" class="agent-container">
+                    <!-- Agent UI will be injected here -->
+                    <div class="section-placeholder">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Tasks</h3>
+                        <p>Your automation tasks will appear here.</p>
                     </div>
+                </div>
+            </div>
+
+            <div id="section-credentials" class="content-section">
+                <div class="section-placeholder">
+                    <i class="fas fa-key"></i>
+                    <h3>Credentials</h3>
+                    <p>Your saved credentials will appear here.</p>
+                </div>
+            </div>
+
+            <div id="section-settings" class="content-section">
+                <div class="section-placeholder">
+                    <i class="fas fa-cog"></i>
+                    <h3>Settings</h3>
+                    <p>Application settings</p>
+                </div>
+            </div>
+
+            <div id="section-help" class="content-section">
+                <div class="section-placeholder">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>Help & Feedback</h3>
+                    <p>Documentation and support</p>
                 </div>
             </div>
         </main>
@@ -133,6 +180,9 @@
                 <span id="time-display">00:00</span>
             </div>
         </footer>
+
+        <!-- Quick Actions Container -->
+        <div id="quick-actions" class="quick-actions-panel"></div>
 
         <!-- Artifacts Sidebar -->
         <div class="artifacts-sidebar" id="artifacts-sidebar">
@@ -154,26 +204,26 @@
                 </button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-section="home">
+                <a href="#" class="nav-item active" data-section="section-home">
                     <i class="fas fa-home"></i> Home
                 </a>
-                <a href="#" class="nav-item" data-section="history">
+                <a href="#" class="nav-item" data-section="section-history">
                     <i class="fas fa-history"></i> History
                 </a>
-                <a href="#" class="nav-item" data-section="bookmarks">
+                <a href="#" class="nav-item" data-section="section-bookmarks">
                     <i class="fas fa-bookmark"></i> Bookmarks
                 </a>
-                <a href="#" class="nav-item" data-section="tasks">
+                <a href="#" class="nav-item" data-section="section-tasks">
                     <i class="fas fa-tasks"></i> Tasks
                 </a>
-                <a href="#" class="nav-item" data-section="credentials">
+                <a href="#" class="nav-item" data-section="section-credentials">
                     <i class="fas fa-key"></i> Credentials
                 </a>
                 <div class="sidebar-divider"></div>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" data-section="section-settings">
                     <i class="fas fa-cog"></i> Settings
                 </a>
-                <a href="#" class="nav-item">
+                <a href="#" class="nav-item" data-section="section-help">
                     <i class="fas fa-question-circle"></i> Help & Feedback
                 </a>
             </nav>

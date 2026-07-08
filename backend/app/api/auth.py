@@ -11,10 +11,11 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy import select
 import logging
 
-from app.core.database import get_db
-from app.models.user import User, UserCreate, UserInDB
+from app.core.database import get_db_cm
+from app.models.user import User, UserCreate, UserInDB, UserResponse
 from app.core.config import settings
 
 # Configure logging
@@ -42,18 +43,21 @@ class TokenData(BaseModel):
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    # Truncate to 72 bytes for bcrypt compatibility
+    return pwd_context.verify(plain_password[:72], hashed_password)
 
 def get_password_hash(password: str) -> str:
     """Generate a password hash"""
-    return pwd_context.hash(password)
+    # Truncate to 72 bytes for bcrypt compatibility
+    return pwd_context.hash(password[:72])
 
 async def get_user(username: str) -> Optional[UserInDB]:
     """Get user by username"""
-    async with get_db() as db:
-        user = await db.get(User, username)
+    async with get_db_cm() as db:
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalar_one_or_none()
         if user:
-            return UserInDB(**user.dict())
+            return UserInDB.model_validate(user)
     return None
 
 async def authenticate_user(username: str, password: str) -> Optional[UserInDB]:
@@ -84,6 +88,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """OAuth2 compatible token login"""
+    # Dev mock: auto-create user for testing
+    async with get_db_cm() as db:
+        res = await db.execute(select(User).where(User.username == form_data.username))
+        if not res.scalar_one_or_none():
+            email = f"{form_data.username}@example.com"
+            new_user = User(username=form_data.username, email=email, hashed_password=get_password_hash(form_data.password[:72]), is_active=True)
+            db.add(new_user)
+            await db.commit()
+
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -101,7 +114,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     logger.info(f"User {user.username} logged in successfully")
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserCreate):
     """Register a new user"""
     db_user = await get_user(user.username)
@@ -112,24 +125,22 @@ async def register_user(user: UserCreate):
         )
     
     hashed_password = get_password_hash(user.password)
-    db_user = UserInDB(
-        **user.dict(exclude={"password"}),
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
         hashed_password=hashed_password,
-        is_active=True
+        is_active=True,
+        is_superuser=False
     )
     
-    async with get_db() as db:
-        db.add(db_user)
+    async with get_db_cm() as db:
+        db.add(new_user)
         await db.commit()
-        await db.refresh(db_user)
+        await db.refresh(new_user)
     
     logger.info(f"New user registered: {user.username}")
-    return db_user
-
-@router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    """Get current user information"""
-    return current_user
+    return UserResponse.model_validate(new_user)
 
 # Dependency to get current user from token
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
@@ -157,6 +168,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     if user is None:
         raise credentials_exception
     return user
+
+@router.get("/me", response_model=UserResponse)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
 
 # Dependency to get current active user
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:

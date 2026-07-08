@@ -117,6 +117,24 @@ SEARCH_PROVIDERS = {
             "Accept": "application/vnd.github.v3+json"
         },
         "response_parser": "parse_github_results"
+    },
+    "serpapi": {
+        "name": "SerpApi (Google)",
+        "url": "https://serpapi.com/search",
+        "params": {
+            "q": "{query}",
+            "api_key": "{api_key}",
+            "num": "{limit}",
+            "start": "{offset}",
+            "safe": "{safe_search}",
+            "gl": "{region}",
+            "hl": "{language}",
+            "engine": "google"
+        },
+        "headers": {
+            "Accept": "application/json"
+        },
+        "response_parser": "parse_serpapi_results"
     }
 }
 
@@ -176,6 +194,10 @@ class SearchService:
             providers = [p.value for p in SearchProvider]
         
         # Filter out unsupported providers
+        # Map Google to SerpApi if needed
+        if "google" in providers and "google" not in SEARCH_PROVIDERS and "serpapi" in SEARCH_PROVIDERS:
+            providers = ["serpapi" if p == "google" else p for p in providers]
+
         providers = [p for p in providers if p in SEARCH_PROVIDERS]
         
         if not providers:
@@ -546,6 +568,28 @@ class SearchService:
             "total_results": data.get("total_count", 0)
         }
     
+    def parse_serpapi_results(self, data: Dict, provider: str, query: str) -> Dict[str, Any]:
+        """Parse search results from SerpApi (Google)"""
+        items = []
+
+        for i, item in enumerate(data.get("organic_results", [])):
+            items.append({
+                "title": item.get("title", ""),
+                "url": item.get("link", ""),
+                "snippet": item.get("snippet", ""),
+                "provider": "google",
+                "score": 1.0 - (i * 0.01),
+                "metadata": {
+                    "displayed_link": item.get("displayed_link", ""),
+                    "rank": item.get("position", i + 1)
+                }
+            })
+
+        return {
+            "items": items,
+            "total_results": data.get("search_information", {}).get("total_results", len(items))
+        }
+
     def parse_basic_results(self, data: Dict, provider: str, query: str) -> Dict[str, Any]:
         """Basic result parser as a fallback"""
         return {

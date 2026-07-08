@@ -359,14 +359,8 @@ class AgentService:
             # Step 4: Testing & Execution
             context = await self.agents[AgentType.TESTER].execute(context)
             
-            # Final Execution of Playwright script if applicable
-            artifact = context.results.get("artifact", {})
-            if artifact.get("type") == "playwright":
-                await emit_progress(context.task_id, {"stage": "Executing", "message": "Running Playwright script..."})
-                from app.services.executor_service import execute_playwright_script
-                exec_result = await execute_playwright_script(artifact.get("code"))
-                context.results["execution_output"] = exec_result
-                await emit_progress(context.task_id, {"stage": "Executing", "message": "Execution complete.", "data": exec_result})
+            # Removed automatic execution for security reasons.
+            # Scripts must be triggered by the user in the UI.
 
             await emit_progress(context.task_id, {"stage": "Complete", "message": "Task finished successfully."})
             return {

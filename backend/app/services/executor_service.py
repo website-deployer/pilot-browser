@@ -66,9 +66,16 @@ async def execute_playwright_script(script_code: str):
 
         # 2. Fallback: Restricted Subprocess
         env = os.environ.copy()
+        env["PYTHONPATH"] = "."
 
         logger.info("Falling back to restricted subprocess")
-        result = await loop.run_in_executor(executor, _run_subprocess, ["python3", tmp_path], 30)
+        result = await loop.run_in_executor(executor, lambda: subprocess.run(
+            ["python3", tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env
+        ))
         return {
             "stdout": result.stdout,
             "stderr": result.stderr,

@@ -6,7 +6,7 @@ This module defines the Task model for managing automation tasks.
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy import Column, String, Text, DateTime, Integer, ForeignKey, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 
@@ -55,30 +55,25 @@ class Task(Base):
 
 # Pydantic Models
 class TaskBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
     """Base task model"""
     title: str = Field(..., min_length=2, max_length=200)
     description: Optional[str] = None
     task_type: TaskType = TaskType.OTHER
     parameters: Dict[str, Any] = {}
     metadata: Dict[str, Any] = {}
-    
-    class Config:
-        orm_mode = True
-        use_enum_values = True
 
 class TaskCreate(TaskBase):
     """Task creation model"""
     pass
 
 class TaskUpdate(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
     """Task update model"""
     status: Optional[TaskStatus] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
-    
-    class Config:
-        use_enum_values = True
 
 class TaskInDB(TaskBase):
     """Task model for database operations"""
@@ -91,10 +86,6 @@ class TaskInDB(TaskBase):
     updated_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    
-    class Config:
-        orm_mode = True
-        use_enum_values = True
 
 class TaskResponse(TaskInDB):
     """Task response model"""

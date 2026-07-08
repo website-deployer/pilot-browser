@@ -101,7 +101,7 @@ export function openModal(modal) {
     activeModals.add(modal);
     
     // Show the modal
-    modal.style.display = 'flex';
+    modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
     
@@ -129,7 +129,7 @@ export function closeModal(modal) {
     }
     
     // Hide the modal
-    modal.style.display = 'none';
+    modal.classList.remove('active');
     modal.setAttribute('aria-hidden', 'true');
     
     // Remove from active modals
@@ -224,16 +224,25 @@ function initSettingsModal() {
     // Load saved settings when modal opens
     settingsModal.addEventListener('modalOpened', loadSettings);
     
-    // Handle settings form submission
-    const settingsForm = settingsModal.querySelector('form');
-    if (settingsForm) {
-        settingsForm.addEventListener('submit', saveSettings);
+    const saveBtn = document.getElementById('save-settings');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveSettings);
     }
     
     // Initialize theme toggle in settings
     const themeSelect = settingsModal.querySelector('#theme-select');
     if (themeSelect) {
         themeSelect.value = state.preferences.theme || 'system';
+    }
+
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => openModal(settingsModal));
+    }
+
+    const cancelBtn = document.getElementById('cancel-settings');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => closeModal(settingsModal));
     }
     
     // Initialize safe search toggle

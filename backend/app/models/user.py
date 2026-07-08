@@ -5,7 +5,7 @@ This module defines the User model and related Pydantic schemas.
 """
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from sqlalchemy import Column, String, Boolean, DateTime, Integer
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -32,21 +32,20 @@ class User(Base):
 
 # Pydantic Models
 class UserBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     """Base user model"""
     username: str = Field(..., min_length=3, max_length=50)
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     is_active: Optional[bool] = True
     is_superuser: bool = False
-    
-    class Config:
-        orm_mode = True
 
 class UserCreate(UserBase):
     """User creation model"""
     password: str = Field(..., min_length=8, max_length=100)
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def password_complexity(cls, v):
         """Validate password complexity"""
         if len(v) < 8:
@@ -66,7 +65,8 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = None
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def password_complexity(cls, v):
         """Validate password complexity if provided"""
         if v is not None:
@@ -86,9 +86,6 @@ class UserInDB(UserBase):
     hashed_password: str
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        orm_mode = True
 
 class UserResponse(UserBase):
     """User response model (excludes sensitive data)"""

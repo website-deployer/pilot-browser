@@ -148,30 +148,16 @@ function initSidebarItems() {
  * @param {string} sectionId - The ID of the section to show
  */
 function showSection(sectionId) {
-    const mainContent = document.querySelector('.main-content');
-    const searchSection = document.querySelector('.search-section');
-    const resultsContainer = document.getElementById('results-container');
-    const agentContainer = document.getElementById('agent-container');
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.classList.toggle('active', section.id === sectionId);
+    });
 
-    // Default: Home/Search view
-    if (sectionId === 'home') {
-        searchSection.classList.remove('hidden');
-        resultsContainer.classList.remove('hidden');
-        agentContainer.classList.add('hidden');
-    } else if (sectionId === 'tasks') {
-        searchSection.classList.add('hidden');
-        resultsContainer.classList.add('hidden');
-        agentContainer.classList.remove('hidden');
-        
+    if (sectionId === 'section-tasks') {
         // Initialize agent mode if it hasn't been already
         import('./agent.js').then(module => {
             module.initAgentMode();
         });
-    } else {
-        // For other sections, we can show a placeholder or hide everything
-        searchSection.classList.add('hidden');
-        resultsContainer.classList.add('hidden');
-        agentContainer.classList.add('hidden');
     }
 }
 
