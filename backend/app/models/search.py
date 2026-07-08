@@ -5,7 +5,7 @@ This module defines the Pydantic models and enums used for search functionality.
 """
 from enum import Enum
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from datetime import datetime
 
 class SearchProvider(str, Enum):

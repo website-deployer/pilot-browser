@@ -209,8 +209,65 @@ function showArtifact(artifact) {
         if (artifact.type === 'app') {
             artifactsContent.innerHTML = `<iframe srcdoc="${artifact.code.replace(/"/g, '&quot;')}" style="width:100%; height:100%; border:none;"></iframe>`;
         } else {
-            artifactsContent.innerHTML = `<pre><code>${artifact.code}</code></pre><p>${artifact.explanation}</p>`;
+            artifactsContent.innerHTML = `
+                <div class="artifact-code-container">
+                    <pre><code>${artifact.code}</code></pre>
+                    <div class="artifact-actions">
+                        <button id="run-artifact-btn" class="btn-primary">
+                            <i class="fas fa-play"></i> Run Script
+                        </button>
+                    </div>
+                </div>
+                <p>${artifact.explanation}</p>
+                <div id="execution-output" class="execution-output hidden"></div>
+            `;
+
+            document.getElementById('run-artifact-btn').addEventListener('click', () => {
+                runPlaywrightScript(artifact.code);
+            });
         }
+    }
+}
+
+async function runPlaywrightScript(code) {
+    const outputEl = document.getElementById('execution-output');
+    const runBtn = document.getElementById('run-artifact-btn');
+
+    if (outputEl) {
+        outputEl.classList.remove('hidden');
+        outputEl.innerHTML = '<div class="spinner-small"></div> Running script...';
+    }
+
+    if (runBtn) runBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${state.apiUrl}/api/v1/agent/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.token}`
+            },
+            body: JSON.stringify({ code: code })
+        });
+
+        const result = await response.json();
+
+        if (outputEl) {
+            if (result.error) {
+                outputEl.innerHTML = `<div class="error-text">Error: ${result.error}</div>`;
+            } else {
+                outputEl.innerHTML = `
+                    <div class="success-text">Script finished with exit code ${result.returncode}</div>
+                    <pre><code>${result.stdout}</code></pre>
+                    ${result.stderr ? `<pre class="error-text"><code>${result.stderr}</code></pre>` : ''}
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('Execution error:', error);
+        if (outputEl) outputEl.innerHTML = '<div class="error-text">Failed to execute script.</div>';
+    } finally {
+        if (runBtn) runBtn.disabled = false;
     }
 }
 

@@ -113,12 +113,9 @@ A minimalist, AI-powered browser with two main modes: Search Mode (AI-enhanced w
 │   ├── renderer/
 │   │   ├── css/              # Stylesheets
 │   │   ├── js/               # JavaScript modules
-│   │   │   ├── components/   # Reusable UI components
-│   │   │   ├── services/     # API and service integrations
-│   │   │   └── utils/        # Helper functions
 │   │   └── index.html        # Main HTML file
-│   ├── main/                 # Electron main process files
-│   └── preload/              # Preload scripts for security
+├── main.js                   # Electron main process
+├── preload.js                # Preload script for security
 │
 ├── .github/                  # GitHub configuration
 │   └── workflows/           # CI/CD workflows

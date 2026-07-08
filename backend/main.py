@@ -56,12 +56,17 @@ async def health_check():
     """Health check endpoint for monitoring"""
     return {"status": "healthy", "version": "0.1.0"}
 
+from fastapi.responses import JSONResponse
+
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return {"detail": "An unexpected error occurred"}, 500
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"},
+    )
 
 # Startup event
 @app.on_event("startup")
@@ -76,7 +81,7 @@ async def startup_event():
         
         # Initialize AI services
         from app.services.agent_service import AgentService
-        await AgentService.initialize()
+        await AgentService().initialize()
         
         logger.info("Pilot Browser Backend started successfully")
     except Exception as e:
@@ -91,7 +96,7 @@ async def shutdown_event():
     # Clean up resources, close connections, etc.
     try:
         from app.services.agent_service import AgentService
-        await AgentService.shutdown()
+        await AgentService().shutdown()
     except Exception as e:
         logger.error(f"Error during shutdown: {str(e)}", exc_info=True)
 

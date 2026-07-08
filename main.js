@@ -96,6 +96,44 @@ function startPythonBackend() {
   });
 }
 
+// IPC Handlers
+ipcMain.on('window-minimize', () => mainWindow.minimize());
+ipcMain.on('window-maximize', () => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+ipcMain.on('window-close', () => mainWindow.close());
+ipcMain.handle('window-is-maximized', () => mainWindow.isMaximized());
+
+ipcMain.handle('get-theme', () => store.get('theme'));
+ipcMain.handle('set-theme', (event, theme) => {
+  store.set('theme', theme);
+  mainWindow.webContents.send('theme-changed', theme);
+  return true;
+});
+
+const axios = require('axios');
+ipcMain.handle('api-request', async (event, { endpoint, method, data }) => {
+  const apiUrl = store.get('apiUrl');
+  try {
+    const response = await axios({
+      url: `${apiUrl}${endpoint}`,
+      method,
+      data,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('API Request error:', error.message);
+    return { error: error.message };
+  }
+});
+
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   createWindow();

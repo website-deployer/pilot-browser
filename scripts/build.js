@@ -82,7 +82,15 @@ async function copyFiles() {
   const backendDest = path.join(distDir, 'backend');
   
   if (await fs.pathExists(backendSrc)) {
-    await fs.copy(backendSrc, backendDest);
+    await fs.copy(backendSrc, backendDest, {
+      filter: (src) => {
+        const basename = path.basename(src);
+        return basename !== '__pycache__' &&
+               basename !== 'pilot_browser.db' &&
+               basename !== 'pilot_backend.log' &&
+               !src.endsWith('.pyc');
+      }
+    });
   }
 }
 

@@ -42,23 +42,37 @@ async_session_factory = sessionmaker(
 Base = declarative_base()
 
 # Dependency to get DB session
-@asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency that provides a database session.
     
     Yields:
         AsyncSession: An async database session
     """
-    session = async_session_factory()
-    try:
-        yield session
-        await session.commit()
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Database error: {e}", exc_info=True)
-        raise
-    finally:
-        await session.close()
+    async with async_session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Database error: {e}", exc_info=True)
+            raise
+
+# Context manager for getting DB session in non-request contexts
+@asynccontextmanager
+async def get_db_cm() -> AsyncGenerator[AsyncSession, None]:
+    """Async context manager that provides a database session.
+
+    Yields:
+        AsyncSession: An async database session
+    """
+    async with async_session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Database error: {e}", exc_info=True)
+            raise
 
 async def init_db():
     """Initialize the database.
@@ -71,9 +85,11 @@ async def init_db():
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
         
-        # Check if tables were created
-        inspector = inspect(engine.sync_engine)
-        table_names = inspector.get_table_names()
+        def get_table_names(sync_conn):
+            inspector = inspect(sync_conn)
+            return inspector.get_table_names()
+
+        table_names = await conn.run_sync(get_table_names)
         logger.info(f"Database initialized. Tables: {table_names}")
 
 # Import models to ensure they are registered with SQLAlchemy
