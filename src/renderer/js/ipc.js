@@ -1,5 +1,6 @@
 // IPC (Inter-Process Communication) for the Pilot Browser
 // Handles communication between the renderer and main processes
+import { io } from 'https://cdn.socket.io/4.7.2/socket.io.esm.min.js';
 
 // Store IPC handlers
 const ipcHandlers = new Map();
@@ -7,6 +8,41 @@ const ipcHandlers = new Map();
 // Store response callbacks for request/response pattern
 const responseCallbacks = new Map();
 let requestId = 0;
+
+let socket = null;
+
+/**
+ * Connect to the WebSocket server for real-time task updates
+ */
+export function connectSocket(taskId) {
+    if (!socket) {
+        socket = io('http://localhost:8000');
+
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from WebSocket server');
+        });
+
+        socket.on('progress', (data) => {
+            console.log('Progress update received:', data);
+            // Dispatch a custom event for the UI to listen to
+            window.dispatchEvent(new CustomEvent('agent-progress', {
+                detail: { taskId, ...data }
+            }));
+        });
+
+        socket.on('joined', (data) => {
+            console.log('Joined task room:', data.task_id);
+        });
+    }
+
+    if (taskId) {
+        socket.emit('join_task', { task_id: taskId });
+    }
+}
 
 /**
  * Check the connection status to the main process

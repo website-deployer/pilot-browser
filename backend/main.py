@@ -10,6 +10,8 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+import socketio
+from app.services.socket_manager import sio
 
 # Set up logging
 logging.basicConfig(
@@ -49,6 +51,9 @@ if static_dir.exists():
 # Import and include routers
 from app.api import router as api_router
 app.include_router(api_router, prefix="/api/v1")
+
+# Create Socket.IO ASGI application
+socket_app = socketio.ASGIApp(sio, app)
 
 # Health check endpoint
 @app.get("/api/health")
@@ -98,4 +103,4 @@ async def shutdown_event():
 # For development with uvicorn
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:socket_app", host="0.0.0.0", port=8000, reload=True)

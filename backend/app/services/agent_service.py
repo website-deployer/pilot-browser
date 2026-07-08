@@ -15,6 +15,7 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 from app.models import Task, TaskStatus, TaskType
 from app.core.database import get_db
+from app.services.socket_manager import emit_progress
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -69,6 +70,7 @@ class PlannerAgent(Agent):
     async def execute(self, context: AgentContext) -> AgentContext:
         """Plan the execution of a task"""
         logger.info(f"PlannerAgent executing task {context.task_id}")
+        await emit_progress(context.task_id, {"stage": "Planning", "message": "Analyzing task requirements..."})
         
         # Update task status
         await self._update_task_status(context.task_id, TaskStatus.RUNNING)
@@ -104,6 +106,7 @@ class PlannerAgent(Agent):
 
             plan_data = json.loads(response.choices[0].message.content)
             context.state["plan"] = plan_data
+            await emit_progress(context.task_id, {"stage": "Planning", "message": "Plan generated.", "data": plan_data})
 
             if plan_data.get("needs_clarification"):
                 context.results["clarification_needed"] = True
@@ -136,6 +139,7 @@ class ResearchAgent(Agent):
     async def execute(self, context: AgentContext) -> AgentContext:
         """Perform research for the task"""
         logger.info(f"ResearchAgent executing task {context.task_id}")
+        await emit_progress(context.task_id, {"stage": "Researching", "message": "Gathering information..."})
         
         if context.results.get("clarification_needed"):
             return context
@@ -159,6 +163,7 @@ class ResearchAgent(Agent):
                 "summary": response.choices[0].message.content,
                 "sources": search_results.get("results", [])
             }
+            await emit_progress(context.task_id, {"stage": "Researching", "message": "Research complete.", "data": context.results["research"]})
             
             return context
         except Exception as e:
@@ -175,6 +180,7 @@ class DeveloperAgent(Agent):
     async def execute(self, context: AgentContext) -> AgentContext:
         """Generate automation script for the task"""
         logger.info(f"DeveloperAgent executing task {context.task_id}")
+        await emit_progress(context.task_id, {"stage": "Generating script", "message": "Writing automation code..."})
         
         if context.results.get("clarification_needed"):
             return context
@@ -204,6 +210,7 @@ class DeveloperAgent(Agent):
 
             dev_data = json.loads(response.choices[0].message.content)
             context.results["artifact"] = dev_data
+            await emit_progress(context.task_id, {"stage": "Generating script", "message": "Script generated.", "data": dev_data})
             
             return context
         except Exception as e:
@@ -220,6 +227,7 @@ class TesterAgent(Agent):
     async def execute(self, context: AgentContext) -> AgentContext:
         """Test the generated automation script"""
         logger.info(f"TesterAgent executing task {context.task_id}")
+        await emit_progress(context.task_id, {"stage": "Testing", "message": "Validating generated code..."})
         
         if context.results.get("clarification_needed"):
             return context
@@ -241,6 +249,7 @@ class TesterAgent(Agent):
                 "passed": True,
                 "review": response.choices[0].message.content
             }
+            await emit_progress(context.task_id, {"stage": "Testing", "message": "Testing complete.", "data": context.results["test_results"]})
             
             # Update task status to completed if no errors
             if not context.errors:
@@ -353,10 +362,13 @@ class AgentService:
             # Final Execution of Playwright script if applicable
             artifact = context.results.get("artifact", {})
             if artifact.get("type") == "playwright":
+                await emit_progress(context.task_id, {"stage": "Executing", "message": "Running Playwright script..."})
                 from app.services.executor_service import execute_playwright_script
-                exec_result = execute_playwright_script(artifact.get("code"))
+                exec_result = await execute_playwright_script(artifact.get("code"))
                 context.results["execution_output"] = exec_result
+                await emit_progress(context.task_id, {"stage": "Executing", "message": "Execution complete.", "data": exec_result})
 
+            await emit_progress(context.task_id, {"stage": "Complete", "message": "Task finished successfully."})
             return {
                 "status": "completed",
                 "results": context.results,

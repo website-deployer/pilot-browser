@@ -148,22 +148,30 @@ function initSidebarItems() {
  * @param {string} sectionId - The ID of the section to show
  */
 function showSection(sectionId) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.main-content > section');
-    sections.forEach(section => {
-        section.style.display = 'none';
-    });
-    
-    // Show the requested section
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.style.display = 'block';
+    const mainContent = document.querySelector('.main-content');
+    const searchSection = document.querySelector('.search-section');
+    const resultsContainer = document.getElementById('results-container');
+    const agentContainer = document.getElementById('agent-container');
+
+    // Default: Home/Search view
+    if (sectionId === 'home') {
+        searchSection.classList.remove('hidden');
+        resultsContainer.classList.remove('hidden');
+        agentContainer.classList.add('hidden');
+    } else if (sectionId === 'tasks') {
+        searchSection.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        agentContainer.classList.remove('hidden');
         
-        // Focus the first focusable element in the section
-        const focusable = targetSection.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable) {
-            focusable.focus();
-        }
+        // Initialize agent mode if it hasn't been already
+        import('./agent.js').then(module => {
+            module.initAgentMode();
+        });
+    } else {
+        // For other sections, we can show a placeholder or hide everything
+        searchSection.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        agentContainer.classList.add('hidden');
     }
 }
 
