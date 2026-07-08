@@ -11,9 +11,10 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy import select
 import logging
 
-from app.core.database import get_db
+from app.core.database import get_db_cm
 from app.models.user import User, UserCreate, UserInDB, UserResponse
 from app.core.config import settings
 
@@ -50,12 +51,9 @@ def get_password_hash(password: str) -> str:
     # Truncate to 72 bytes for bcrypt compatibility
     return pwd_context.hash(password[:72])
 
-from app.core.database import get_db_cm
-
 async def get_user(username: str) -> Optional[UserInDB]:
     """Get user by username"""
     async with get_db_cm() as db:
-        from sqlalchemy import select
         result = await db.execute(select(User).where(User.username == username))
         user = result.scalar_one_or_none()
         if user:
@@ -87,12 +85,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 # Routes
-@router.post("/login", response_model=Token)
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """OAuth2 compatible token login"""
     # Dev mock: auto-create user for testing
-    from sqlalchemy import select
     async with get_db_cm() as db:
         res = await db.execute(select(User).where(User.username == form_data.username))
         if not res.scalar_one_or_none():
@@ -129,19 +125,22 @@ async def register_user(user: UserCreate):
         )
     
     hashed_password = get_password_hash(user.password)
-    db_user = UserInDB(
-        **user.dict(exclude={"password"}),
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
         hashed_password=hashed_password,
-        is_active=True
+        is_active=True,
+        is_superuser=False
     )
     
-    async with get_db() as db:
-        db.add(db_user)
+    async with get_db_cm() as db:
+        db.add(new_user)
         await db.commit()
-        await db.refresh(db_user)
+        await db.refresh(new_user)
     
     logger.info(f"New user registered: {user.username}")
-    return db_user
+    return UserResponse.model_validate(new_user)
 
 # Dependency to get current user from token
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:

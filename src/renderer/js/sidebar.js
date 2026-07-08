@@ -148,23 +148,10 @@ function initSidebarItems() {
  * @param {string} sectionId - The ID of the section to show
  */
 function showSection(sectionId) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.main-content > section');
+    const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
-        section.style.display = 'none';
+        section.classList.toggle('active', section.id === sectionId);
     });
-    
-    // Show the requested section
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.style.display = 'block';
-        
-        // Focus the first focusable element in the section
-        const focusable = targetSection.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable) {
-            focusable.focus();
-        }
-    }
 }
 
 /**

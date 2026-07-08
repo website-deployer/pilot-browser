@@ -1,6 +1,6 @@
 // Theme management for the Pilot Browser
 
-import { state } from './app.js';
+import { state, savePreferences } from './app.js';
 
 /**
  * Initialize theme functionality
@@ -78,10 +78,7 @@ function applyTheme(theme) {
     // Update state
     state.preferences.theme = theme;
     
-    // Save to preferences
-    if (window.savePreferences) {
-        window.savePreferences();
-    }
+    savePreferences();
 }
 
 /**

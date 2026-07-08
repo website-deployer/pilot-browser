@@ -16,10 +16,11 @@ export function checkConnectionStatus() {
     // For now, we'll assume we're always connected in the browser
     const isConnected = true;
     
-    // Update UI based on connection status
     const connectionStatus = document.getElementById('connection-status');
     if (connectionStatus) {
         connectionStatus.className = `connection-status ${isConnected ? 'connected' : 'disconnected'}`;
+        const icon = connectionStatus.querySelector('i');
+        if (icon) icon.className = isConnected ? 'fas fa-plug' : 'fas fa-plug';
         connectionStatus.title = isConnected ? 'Connected' : 'Disconnected';
     }
     
