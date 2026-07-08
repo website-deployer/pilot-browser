@@ -334,6 +334,13 @@ function switchSearchMode(mode) {
     
     // Update state
     state.search.mode = mode;
+
+    // Toggle agent active theme class on body
+    if (mode === 'ai') {
+        document.body.classList.add('agent-active-theme');
+    } else {
+        document.body.classList.remove('agent-active-theme');
+    }
     
     // If there's an active query, perform a new search
     if (state.search.query) {

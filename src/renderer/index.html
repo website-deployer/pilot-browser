@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pilot Browser</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -29,61 +32,63 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Clarification Popup -->
-            <div id="clarification-popup" class="clarification-popup hidden">
-                <div class="popup-content">
-                    <p id="clarification-question"></p>
-                    <div id="clarification-options" class="options-grid"></div>
-                    <div class="custom-input-group">
-                        <input type="text" id="custom-clarification" placeholder="Other option...">
-                        <button id="send-clarification" class="btn-primary">Send</button>
+            <div class="search-section">
+                <!-- Clarification Popup -->
+                <div id="clarification-popup" class="clarification-popup hidden">
+                    <div class="popup-content">
+                        <p id="clarification-question"></p>
+                        <div id="clarification-options" class="options-grid"></div>
+                        <div class="custom-input-group">
+                            <input type="text" id="custom-clarification" placeholder="Other option...">
+                            <button id="send-clarification" class="btn-primary">Send</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Search/AI Input -->
-            <div class="search-container">
-                <div class="search-box">
-                    <div class="search-input-container">
-                        <i class="fas fa-search search-icon"></i>
-                        <input 
-                            type="text" 
-                            id="search-input" 
-                            class="search-input" 
-                            placeholder="Ask or search..." 
-                            autocomplete="off"
-                            autofocus
-                        >
-                        <div class="search-actions">
-                            <button id="calc-btn" class="icon-btn" title="Calculator"><i class="fas fa-calculator"></i></button>
-                            <button id="sum-btn" class="icon-btn" title="Summarize"><i class="fas fa-align-left"></i></button>
-                            <button id="trans-btn" class="icon-btn" title="Translate"><i class="fas fa-language"></i></button>
-                            <button id="weather-btn" class="icon-btn" title="Weather"><i class="fas fa-cloud-sun"></i></button>
-                            <button id="automate-btn" class="icon-btn" title="Automate"><i class="fas fa-magic"></i></button>
-                            <button id="voice-search-btn" class="icon-btn" title="Voice search">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <button id="clear-search-btn" class="icon-btn" title="Clear">
-                                <i class="fas fa-times"></i>
-                            </button>
+                <!-- Search/AI Input -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <div class="search-input-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input
+                                type="text"
+                                id="search-input"
+                                class="search-input"
+                                placeholder="Ask or search..."
+                                autocomplete="off"
+                                autofocus
+                            >
+                            <div class="search-actions">
+                                <button id="calc-btn" class="icon-btn" title="Calculator"><i class="fas fa-calculator"></i></button>
+                                <button id="sum-btn" class="icon-btn" title="Summarize"><i class="fas fa-align-left"></i></button>
+                                <button id="trans-btn" class="icon-btn" title="Translate"><i class="fas fa-language"></i></button>
+                                <button id="weather-btn" class="icon-btn" title="Weather"><i class="fas fa-cloud-sun"></i></button>
+                                <button id="automate-btn" class="icon-btn" title="Automate"><i class="fas fa-magic"></i></button>
+                                <button id="voice-search-btn" class="icon-btn" title="Voice search">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <button id="clear-search-btn" class="icon-btn" title="Clear">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="search-controls">
-                        <div class="search-modes">
-                            <button class="mode-btn active" data-mode="search">
-                                <i class="fas fa-search"></i> Search
-                            </button>
-                            <button class="mode-btn" data-mode="ai">
-                                <i class="fas fa-robot"></i> Agent Mode
-                            </button>
-                        </div>
-                        <div class="safety-selector">
-                            <label for="safety-level">Safety:</label>
-                            <select id="safety-level">
-                                <option value="strict">Strict</option>
-                                <option value="auto" selected>Auto</option>
-                                <option value="relaxed">Relaxed</option>
-                            </select>
+                        <div class="search-controls">
+                            <div class="search-modes">
+                                <button class="mode-btn active" data-mode="search">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <button class="mode-btn" data-mode="ai">
+                                    <i class="fas fa-robot"></i> Agent Mode
+                                </button>
+                            </div>
+                            <div class="safety-selector">
+                                <label for="safety-level">Safety:</label>
+                                <select id="safety-level">
+                                    <option value="strict">Strict</option>
+                                    <option value="auto" selected>Auto</option>
+                                    <option value="relaxed">Relaxed</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
