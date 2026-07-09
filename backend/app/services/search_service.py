@@ -84,7 +84,7 @@ SEARCH_PROVIDERS = {
             "utf8": "1"
         },
         "headers": {
-            "User-Agent": "PilotBrowser/1.0"
+            "User-Agent": "PilotBrowser/1.0 (https://github.com/website-deployer/pilot-browser; pilot@example.com)"
         },
         "response_parser": "parse_wikipedia_results"
     },
@@ -189,9 +189,9 @@ class SearchService:
         if not self.initialized:
             await self.initialize()
         
-        # Use all providers if none specified
+        # Use free/no-key providers by default
         if not providers:
-            providers = [p.value for p in SearchProvider]
+            providers = ["wikipedia", "duckduckgo"]
         
         # Filter out unsupported providers
         # Map Google to SerpApi if needed

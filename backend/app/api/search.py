@@ -54,7 +54,7 @@ async def search(
         return {
             "query": query.query,
             "total_results": results.get("total_results", 0),
-            "results": results.get("items", [])
+            "results": results.get("results", [])
         }
         
     except Exception as e:

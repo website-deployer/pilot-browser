@@ -14,7 +14,7 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.models import Task, TaskStatus, TaskType
-from app.core.database import get_db
+from app.core.database import get_db_cm
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -119,13 +119,12 @@ class PlannerAgent(Agent):
     
     async def _update_task_status(self, task_id: int, status: TaskStatus, error: Optional[str] = None):
         """Update task status in the database"""
-        async with get_db() as db:
+        async with get_db_cm() as db:
             task = await db.get(Task, task_id)
             if task:
                 task.status = status
                 if error:
                     task.error = error
-                await db.commit()
 
 class ResearchAgent(Agent):
     """Research agent responsible for gathering information"""
@@ -244,12 +243,11 @@ class TesterAgent(Agent):
             
             # Update task status to completed if no errors
             if not context.errors:
-                async with get_db() as db:
+                async with get_db_cm() as db:
                     task = await db.get(Task, context.task_id)
                     if task:
                         task.status = TaskStatus.COMPLETED
                         task.result = context.results
-                        await db.commit()
             
             return context
         except Exception as e:
@@ -257,12 +255,11 @@ class TesterAgent(Agent):
             context.errors.append(f"Testing failed: {str(e)}")
             
             # Update task status to failed
-            async with get_db() as db:
+            async with get_db_cm() as db:
                 task = await db.get(Task, context.task_id)
                 if task:
                     task.status = TaskStatus.FAILED
                     task.error = "\n".join(context.errors)
-                    await db.commit()
             
             return context
 
@@ -363,12 +360,11 @@ class AgentService:
             logger.error(error_msg, exc_info=True)
             
             # Update task status to failed
-            async with get_db() as db:
+            async with get_db_cm() as db:
                 task = await db.get(Task, task_id)
                 if task:
                     task.status = TaskStatus.FAILED
                     task.error = error_msg
-                    await db.commit()
             
             return {
                 "success": False,

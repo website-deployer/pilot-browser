@@ -12,7 +12,7 @@ import { checkConnectionStatus, setupIpcHandlers } from './ipc.js';
 const state = {
     isInitialized: false,
     apiUrl: 'http://localhost:8000',
-    token: 'dev-token', // Placeholder for development
+    token: null, // Will be set after login
     user: null,
     preferences: {},
     searchHistory: [],
@@ -37,6 +37,9 @@ export async function initApp() {
         
         // Initialize IPC communication
         setupIpcHandlers();
+        
+        // Auto-login with dev credentials to get a real JWT token
+        await autoLogin();
         
         // Load user data and preferences
         await loadUserData();
@@ -96,6 +99,38 @@ async function loadUserData() {
             autoAIMode: true
         };
         state.searchHistory = [];
+    }
+}
+
+/**
+ * Auto-login with dev credentials to get a real JWT token
+ */
+async function autoLogin() {
+    try {
+        const formData = new URLSearchParams();
+        formData.append('username', 'dev');
+        formData.append('password', 'dev');
+        
+        const response = await fetch(`${state.apiUrl}/api/v1/auth/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            state.token = data.access_token;
+            state.user = { username: 'dev' };
+            console.log('Auto-login successful');
+        } else {
+            console.warn('Auto-login failed, API calls will be unauthenticated');
+            state.token = 'dev-token';
+        }
+    } catch (error) {
+        console.error('Auto-login error:', error);
+        state.token = 'dev-token';
     }
 }
 
