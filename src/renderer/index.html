@@ -43,7 +43,7 @@
 
             <!-- Search/AI Input -->
             <div class="search-container">
-                <div class="search-box">
+                <form class="search-box">
                     <div class="search-input-container">
                         <i class="fas fa-search search-icon"></i>
                         <input 
@@ -86,7 +86,7 @@
                             </select>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
 
             <!-- Results Container -->
@@ -221,7 +221,23 @@
                                 <option value="google">Google</option>
                                 <option value="bing">Bing</option>
                                 <option value="duckduckgo">DuckDuckGo</option>
+                                <option value="wikipedia">Wikipedia</option>
                             </select>
+                        </div>
+                        <div class="setting-group">
+                            <h5>API Keys</h5>
+                            <div class="setting">
+                                <label>Google (SerpApi)</label>
+                                <input type="password" id="google-api-key" placeholder="Enter API Key">
+                            </div>
+                            <div class="setting">
+                                <label>Bing</label>
+                                <input type="password" id="bing-api-key" placeholder="Enter API Key">
+                            </div>
+                            <div class="setting">
+                                <label>GitHub</label>
+                                <input type="password" id="github-api-key" placeholder="Enter API Key">
+                            </div>
                         </div>
                     </div>
                     <div class="settings-section">

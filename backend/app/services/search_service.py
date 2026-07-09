@@ -12,6 +12,7 @@ import aiohttp
 import json
 import time
 from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
 
 from app.core.config import settings
 from app.models.search import SearchResult, SearchProvider
@@ -84,7 +85,7 @@ SEARCH_PROVIDERS = {
             "utf8": "1"
         },
         "headers": {
-            "User-Agent": "PilotBrowser/1.0"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         },
         "response_parser": "parse_wikipedia_results"
     },
@@ -232,16 +233,22 @@ class SearchService:
                 logger.error(f"Error searching with {provider}: {str(result)}")
                 provider_errors[provider] = str(result)
                 continue
+
+            if not result:
+                continue
                 
-            if result and "items" in result:
+            if "items" in result:
                 aggregated_results.extend(result["items"])
+
+            if result.get("error"):
+                provider_errors[provider] = result["error"]
         
         # Deduplicate results by URL
         seen_urls = set()
         deduped_results = []
         
         for result in aggregated_results:
-            url = result.get("url", "")
+            url = str(result.get("url", ""))
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 deduped_results.append(result)
@@ -360,6 +367,10 @@ class SearchService:
                 timeout=aiohttp.ClientTimeout(total=10)
             ) as response:
                 if response.status != 200:
+                    if provider == SearchProvider.DUCKDUCKGO:
+                        logger.info(f"DDG API returned status {response.status}, falling back to scraper")
+                        return await self._scrape_duckduckgo_html(query, limit)
+
                     error_text = await response.text()
                     logger.error(
                         f"Error from {provider} API: {response.status} - {error_text}"
@@ -367,7 +378,18 @@ class SearchService:
                     return {"items": [], "error": f"API error: {response.status}"}
                 
                 # Parse the response
-                response_data = await response.json()
+                if provider == SearchProvider.DUCKDUCKGO:
+                    # Special handling for DDG - try JSON first, then scrape
+                    try:
+                        response_data = await response.json()
+                        if not response_data.get("Results") and not response_data.get("RelatedTopics"):
+                            logger.info("DDG JSON API returned no results, falling back to scraper")
+                            return await self._scrape_duckduckgo_html(query, limit)
+                    except Exception as e:
+                        logger.info(f"DDG JSON API error ({str(e)}), falling back to scraper")
+                        return await self._scrape_duckduckgo_html(query, limit)
+                else:
+                    response_data = await response.json()
                 
                 # Use the appropriate parser for this provider
                 parser_name = provider_config.get("response_parser", "parse_basic_results")
@@ -388,6 +410,44 @@ class SearchService:
         # In a real implementation, this would track request timestamps
         # and add delays as needed to respect rate limits
         pass
+
+    async def _scrape_duckduckgo_html(self, query: str, limit: int = 10) -> Dict[str, Any]:
+        """Scrape DuckDuckGo HTML search results as a fallback"""
+        url = "https://html.duckduckgo.com/html/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        data = {"q": query}
+
+        try:
+            async with self.session.post(url, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                if response.status != 200:
+                    return {"items": [], "error": f"Scraper error: {response.status}"}
+
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+
+                items = []
+                results = soup.select(".result")
+
+                for i, res in enumerate(results[:limit]):
+                    title_tag = res.select_one(".result__a")
+                    snippet_tag = res.select_one(".result__snippet")
+
+                    if title_tag:
+                        items.append({
+                            "title": title_tag.get_text(strip=True),
+                            "url": title_tag["href"],
+                            "snippet": snippet_tag.get_text(strip=True) if snippet_tag else "",
+                            "provider": SearchProvider.DUCKDUCKGO,
+                            "score": 0.85 - (i * 0.01),
+                            "metadata": {"type": "scraped"}
+                        })
+
+                return {"items": items, "total_results": len(items)}
+        except Exception as e:
+            logger.error(f"DDG Scraper error: {str(e)}")
+            return {"items": [], "error": str(e)}
     
     # Result parsers for different search providers
     
@@ -453,11 +513,19 @@ class SearchService:
         """Parse search results from Wikipedia API"""
         items = []
 
+        if not data or "query" not in data:
+            return {"items": [], "total_results": 0}
+
         for i, item in enumerate(data.get("query", {}).get("search", [])):
+            # Clean HTML tags from snippet
+            snippet = item.get("snippet", "")
+            if snippet:
+                snippet = BeautifulSoup(snippet, "html.parser").get_text()
+
             items.append({
                 "title": item.get("title", ""),
                 "url": f"https://en.wikipedia.org/wiki/{quote_plus(item.get('title', ''))}",
-                "snippet": item.get("snippet", ""),
+                "snippet": snippet,
                 "provider": provider,
                 "score": 0.95 - (i * 0.01),
                 "metadata": {

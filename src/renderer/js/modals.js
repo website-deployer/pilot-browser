@@ -259,6 +259,20 @@ function initSettingsModal() {
     if (autoAIModeToggle) {
         autoAIModeToggle.checked = state.preferences.autoAIMode !== false;
     }
+
+    // Initialize API keys
+    const googleApiKey = settingsModal.querySelector('#google-api-key');
+    if (googleApiKey) {
+        googleApiKey.value = state.preferences.googleApiKey || '';
+    }
+    const bingApiKey = settingsModal.querySelector('#bing-api-key');
+    if (bingApiKey) {
+        bingApiKey.value = state.preferences.bingApiKey || '';
+    }
+    const githubApiKey = settingsModal.querySelector('#github-api-key');
+    if (githubApiKey) {
+        githubApiKey.value = state.preferences.githubApiKey || '';
+    }
 }
 
 /**
@@ -297,6 +311,20 @@ function loadSettings() {
     if (autoAIModeToggle) {
         autoAIModeToggle.checked = state.preferences.autoAIMode !== false;
     }
+
+    // Load API keys
+    const googleApiKey = settingsModal.querySelector('#google-api-key');
+    if (googleApiKey) {
+        googleApiKey.value = state.preferences.googleApiKey || '';
+    }
+    const bingApiKey = settingsModal.querySelector('#bing-api-key');
+    if (bingApiKey) {
+        bingApiKey.value = state.preferences.bingApiKey || '';
+    }
+    const githubApiKey = settingsModal.querySelector('#github-api-key');
+    if (githubApiKey) {
+        githubApiKey.value = state.preferences.githubApiKey || '';
+    }
 }
 
 /**
@@ -315,6 +343,9 @@ function saveSettings(e) {
     const searchEngineSelect = settingsModal.querySelector('#search-engine-select');
     const aiModelSelect = settingsModal.querySelector('#ai-model-select');
     const autoAIModeToggle = settingsModal.querySelector('#auto-ai-mode');
+    const googleApiKey = settingsModal.querySelector('#google-api-key');
+    const bingApiKey = settingsModal.querySelector('#bing-api-key');
+    const githubApiKey = settingsModal.querySelector('#github-api-key');
     
     // Update preferences
     state.preferences = {
@@ -323,7 +354,10 @@ function saveSettings(e) {
         safeSearch: safeSearchToggle ? safeSearchToggle.checked : true,
         searchEngine: searchEngineSelect ? searchEngineSelect.value : 'google',
         aiModel: aiModelSelect ? aiModelSelect.value : 'gpt-4',
-        autoAIMode: autoAIModeToggle ? autoAIModeToggle.checked : true
+        autoAIMode: autoAIModeToggle ? autoAIModeToggle.checked : true,
+        googleApiKey: googleApiKey ? googleApiKey.value : '',
+        bingApiKey: bingApiKey ? bingApiKey.value : '',
+        githubApiKey: githubApiKey ? githubApiKey.value : ''
     };
     
     // Save to localStorage

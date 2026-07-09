@@ -20,6 +20,31 @@ const state = {
 };
 
 /**
+ * Dev login to get a token
+ */
+async function devLogin() {
+    try {
+        const response = await fetch(`${state.apiUrl}/api/v1/auth/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                username: 'guest',
+                password: 'password',
+            }),
+        });
+        const data = await response.json();
+        if (data.access_token) {
+            state.token = data.access_token;
+            console.log('Dev login successful');
+        }
+    } catch (error) {
+        console.error('Dev login failed:', error);
+    }
+}
+
+/**
  * Initialize the application
  */
 export async function initApp() {
@@ -28,6 +53,9 @@ export async function initApp() {
     console.log('Initializing Pilot Browser...');
     
     try {
+        // Perform dev login first
+        await devLogin();
+
         // Initialize UI components
         initTheme();
         initSidebar();

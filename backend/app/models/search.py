@@ -81,7 +81,7 @@ class SearchQuery(BaseModel):
 class SearchResult(BaseModel):
     """Model for a single search result"""
     title: str = Field(..., description="Title of the search result")
-    url: HttpUrl = Field(..., description="URL of the search result")
+    url: str = Field(..., description="URL of the search result")
     snippet: Optional[str] = Field(None, description="Short description or preview of the result")
     provider: str = Field(..., description="Name of the search provider that returned this result")
     result_type: SearchResultType = Field(

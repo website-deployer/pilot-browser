@@ -39,6 +39,12 @@ async def search(
     try:
         logger.info(f"Performing search for query: {query.query}")
         
+        # Override global settings with per-request API keys if provided
+        if query.filters:
+            for key in ["GOOGLE_API_KEY", "BING_API_KEY", "GITHUB_API_KEY"]:
+                if key in query.filters:
+                    setattr(settings, key, query.filters[key])
+
         # Perform search using the search service
         results = await search_service.search(
             query=query.query,
@@ -54,7 +60,9 @@ async def search(
         return {
             "query": query.query,
             "total_results": results.get("total_results", 0),
-            "results": results.get("items", [])
+            "results": results.get("results", []),
+            "providers_used": results.get("providers_used", []),
+            "provider_errors": results.get("provider_errors")
         }
         
     except Exception as e:

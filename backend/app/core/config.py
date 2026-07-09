@@ -58,8 +58,13 @@ class Settings(BaseSettings):
     
     # Search
     SEARCH_PROVIDERS: List[str] = [
-        "duckduckgo", "wikipedia", "google", "bing"
+        "duckduckgo", "wikipedia"
     ]
+    DUCKDUCKGO_API_KEY: str = ""
+    WIKIPEDIA_API_KEY: str = ""
+    GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY", "")
+    BING_API_KEY: Optional[str] = os.getenv("BING_API_KEY", "")
+    GITHUB_API_KEY: Optional[str] = os.getenv("GITHUB_API_KEY", "")
     
     # Security
     SECURE_COOKIES: bool = os.getenv("SECURE_COOKIES", "true").lower() == "true"

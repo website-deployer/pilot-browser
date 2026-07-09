@@ -409,19 +409,28 @@ async function performWebSearch(query) {
     searchController = new AbortController();
     
     try {
+        const searchParams = {
+            query: query,
+            filters: {
+                GOOGLE_API_KEY: state.preferences.googleApiKey,
+                BING_API_KEY: state.preferences.bingApiKey,
+                GITHUB_API_KEY: state.preferences.githubApiKey
+            }
+        };
+
         const response = await fetch(`${state.apiUrl}/api/v1/search/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${state.token}`
             },
-            body: JSON.stringify({ query: query }),
+            body: JSON.stringify(searchParams),
             signal: searchController.signal
         });
         
         const data = await response.json();
         state.search.results = data.results;
-        displaySearchResults(data.results);
+        displaySearchResults(data.results, data.provider_errors);
         
     } catch (error) {
         if (error.name !== 'AbortError') {
@@ -433,39 +442,6 @@ async function performWebSearch(query) {
     }
 }
 
-/**
- * Perform an AI-powered search
- * @param {string} query - The search query
- */
-async function performAISearch(query) {
-    // Similar to performWebSearch but for AI mode
-    // This would call your AI backend instead of the regular search
-    
-    try {
-        // Show loading state
-        showAILoading(query);
-        
-        // In a real app, this would be an API call to your AI backend
-        // const response = await fetch('/api/ai/search', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ query })
-        // });
-        // const result = await response.json();
-        
-        // For now, we'll use mock data
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate AI processing
-        
-        const mockAIResponse = generateMockAIResponse(query);
-        
-        // Display AI response
-        displayAIResponse(mockAIResponse);
-        
-    } catch (error) {
-        console.error('AI search error:', error);
-        showSearchError('Failed to get AI response. Please try again.');
-    }
-}
 
 /**
  * Show loading state for search
@@ -509,10 +485,23 @@ function showAILoading(query) {
 /**
  * Display search results
  * @param {Array} results - The search results to display
+ * @param {Object} providerErrors - Errors from search providers
  */
-function displaySearchResults(results) {
+function displaySearchResults(results, providerErrors = null) {
     const resultsContainer = document.getElementById('results-container');
     if (!resultsContainer) return;
+
+    // Build error badges if any
+    let errorBadges = '';
+    if (providerErrors) {
+        errorBadges = `<div class="provider-errors">
+            ${Object.entries(providerErrors).map(([provider, error]) => `
+                <span class="error-badge" title="${error}">
+                    <i class="fas fa-exclamation-circle"></i> ${provider} failed
+                </span>
+            `).join('')}
+        </div>`;
+    }
     
     if (!results || results.length === 0) {
         resultsContainer.innerHTML = `
@@ -528,7 +517,9 @@ function displaySearchResults(results) {
     // Generate HTML for results
     const resultsHTML = results.map((result, index) => `
         <div class="search-result fade-in" style="animation-delay: ${index * 0.05}s">
-            <div class="result-source">${result.source}</div>
+            <div class="result-source">
+                <i class="${getProviderIcon(result.provider)}"></i> ${result.provider}
+            </div>
             <h3 class="result-title">
                 <a href="${result.url}" target="_blank" rel="noopener noreferrer">
                     ${result.title}
@@ -549,7 +540,8 @@ function displaySearchResults(results) {
     resultsContainer.innerHTML = `
         <div class="search-results">
             <div class="search-stats">
-                Found ${results.length} results for "${state.search.query}"
+                <span>Found ${results.length} results for "${state.search.query}"</span>
+                ${errorBadges}
             </div>
             <div class="results-list">
                 ${resultsHTML}
@@ -657,6 +649,21 @@ function startVoiceSearch() {
 }
 
 /**
+ * Get font-awesome icon for provider
+ */
+function getProviderIcon(provider) {
+    const icons = {
+        'google': 'fab fa-google',
+        'bing': 'fab fa-microsoft',
+        'duckduckgo': 'fas fa-search',
+        'wikipedia': 'fab fa-wikipedia-w',
+        'reddit': 'fab fa-reddit',
+        'github': 'fab fa-github'
+    };
+    return icons[provider.toLowerCase()] || 'fas fa-globe';
+}
+
+/**
  * Format a URL for display
  * @param {string} url - The URL to format
  * @returns {string} The formatted URL
@@ -670,56 +677,6 @@ function formatUrl(url) {
     }
 }
 
-/**
- * Generate mock search results for testing
- * @param {string} query - The search query
- * @returns {Array} Mock search results
- */
-function generateMockSearchResults(query) {
-    const sources = ['Wikipedia', 'TechCrunch', 'Medium', 'GitHub', 'Stack Overflow', 'Reddit'];
-    const mockResults = [];
-    
-    for (let i = 0; i < 8; i++) {
-        const source = sources[Math.floor(Math.random() * sources.length)];
-        const id = Math.random().toString(36).substring(2, 8);
-        
-        mockResults.push({
-            id: `result-${id}`,
-            title: `${query} - ${source} Article ${i + 1}`,
-            url: `https://example.com/${source.toLowerCase()}/${query.replace(/\s+/g, '-')}-${id}`,
-            snippet: `This is a sample search result for "${query}" from ${source}. It contains some sample text that would normally be a snippet from the actual search result.`,
-            source: source,
-            metadata: {
-                date: new Date().toLocaleDateString(),
-                author: Math.random() > 0.5 ? `Author ${String.fromCharCode(65 + i)}` : undefined
-            }
-        });
-    }
-    
-    return mockResults;
-}
-
-/**
- * Generate a mock AI response for testing
- * @param {string} query - The search query
- * @returns {Object} Mock AI response
- */
-function generateMockAIResponse(query) {
-    const responses = [
-        `I found some information about "${query}". Based on my knowledge, this is a topic that has been widely discussed in various sources.`,
-        `Here's what I know about "${query}": It's a subject that has gained significant attention recently, with many experts weighing in on the matter.`,
-        `When it comes to "${query}", there are several important aspects to consider. Let me break it down for you.`,
-        `I've analyzed "${query}" and here's a summary of the key points you should know.`
-    ];
-    
-    return {
-        content: responses[Math.floor(Math.random() * responses.length)],
-        sources: Array.from({ length: 3 }, (_, i) => ({
-            title: `Source ${i + 1} about ${query}`,
-            url: `https://example.com/article-${Math.random().toString(36).substring(2, 8)}`
-        }))
-    };
-}
 
 /**
  * Get a random word for suggestions
